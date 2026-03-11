@@ -2,7 +2,32 @@
 
 #include "GrabCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PhysicsVolume.h"
 #include "Kismet/KismetMathLibrary.h"
+
+FVector UGrabCharacterMovementComponent::ClampVelocityToMax(const FVector& InVelocity) const
+{
+    FVector Result = InVelocity;
+    // Clamp horizontal speed using movement component rules
+    const float MaxHorizSpeed = GetMaxSpeed();
+    FVector Horiz(Result.X, Result.Y, 0.f);
+    const float HorizSize = Horiz.Size();
+    if (HorizSize > MaxHorizSpeed && HorizSize > KINDA_SMALL_NUMBER)
+    {
+        Horiz = Horiz.GetSafeNormal() * MaxHorizSpeed;
+        Result.X = Horiz.X;
+        Result.Y = Horiz.Y;
+    }
+    // Clamp vertical speed using physics volume terminal velocity
+    APhysicsVolume *PVolume = GetPhysicsVolume();
+    const float TerminalVel = PVolume ? PVolume->TerminalVelocity : BIG_NUMBER;
+    Result.Z = FMath::Clamp(
+        Result.Z,
+        -TerminalVel,
+        TerminalVel
+    );
+    return Result;
+}
 
 // Moves grabber based on attached actor and optional Z handling
 void UGrabCharacterMovementComponent::MoveGrabberTowardsAttached(float DeltaTime, bool bClampZ)
@@ -45,7 +70,8 @@ void UGrabCharacterMovementComponent::MoveGrabberTowardsAttached(float DeltaTime
     // Compute velocity using the **possibly clamped location**
     // will drop vertical z if location unchanged
     // we've changed the NewLoc, we don't need to recompute it.
-    Velocity = (NewLocation - LastLocation) / DeltaTime;
+    // we clamp velocity mainly to prevent excessive launch on mode exit.
+    Velocity = ClampVelocityToMax((NewLocation - LastLocation) / DeltaTime);
     LastLocation = NewLocation;
     // make actor look at grabbed actor
     FVector FaceDir = AttachedLocation - NewLocation;

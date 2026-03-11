@@ -50,4 +50,5 @@ protected:
     virtual void PhysFalling(float DeltaTime, int32 Iterations) override;
 
     void MoveGrabberTowardsAttached(float DeltaTime, bool bIgnoreZ);
+    FVector ClampVelocityToMax(const FVector& InVelocity) const;
 };
