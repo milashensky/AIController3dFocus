@@ -13,7 +13,7 @@ class BASEGAMEUTILS_API ASensingCharacter : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	ASensingCharacter();
+	ASensingCharacter(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
