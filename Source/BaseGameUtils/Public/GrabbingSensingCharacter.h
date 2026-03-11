@@ -21,6 +21,6 @@ public:
 
     AGrabbingSensingCharacter(const FObjectInitializer& ObjectInitializer);
 
-    UFUNCTION(BlueprintCallable)
+    UFUNCTION(BlueprintCallable, Category = "Character|MovementComponent")
     UGrabCharacterMovementComponent* GetGrabMovementComponent() const;
 };
