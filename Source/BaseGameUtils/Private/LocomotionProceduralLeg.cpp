@@ -3,6 +3,7 @@
 
 #include "LocomotionProceduralLeg.h"
 #include "RigStepNotifyInterface.h"
+#include "Async/Async.h"
 #include "Rigs/RigHierarchy.h"
 
 double EllipsoidalDistanceMultiplier(
@@ -211,13 +212,22 @@ void FLocomotionProceduralLeg::Stop(const bool isForce) {
     if (isFalling || distance < 10) {
         return;
     }
-    if (Owner && Owner->Implements<URigStepNotifyInterface>())
+    FTransform SoundTransform = LockTransform;
+    AsyncTask(ENamedThreads::GameThread, [Owner, SoundTransform]()
     {
-        IRigStepNotifyInterface::Execute_NotifyRigStep(
-            const_cast<AActor*>(Owner),
-            LockTransform
-        );
-    }
+        if (!IsValid(Owner))
+        {
+            return;
+        }
+
+        if (Owner->Implements<URigStepNotifyInterface>())
+        {
+            IRigStepNotifyInterface::Execute_NotifyRigStep(
+                const_cast<AActor*>(Owner),
+                SoundTransform
+            );
+        }
+    });
 }
 
 void FLocomotionProceduralLeg::StartMovement() {

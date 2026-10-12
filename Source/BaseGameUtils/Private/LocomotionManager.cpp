@@ -13,6 +13,9 @@ float CheapLerp(float Start, float Target, float Alpha) {
 }
 
 void FLocomotionManager::SelectGait() {
+    if (!AllGaits.Num()) {
+        return;
+    }
     CurrentGaitIndex = 0;
     for (int32 GaitIndex = 0; GaitIndex < AllGaits.Num(); ++GaitIndex) {
         if (AllGaits[GaitIndex].SpeedMin <= Speed) {
@@ -40,6 +43,9 @@ void FLocomotionManager::Reset(
     AllFeet.Reset(0);
     int32 LegsCount = Legs.Num();
     LegOffsets.Reset(LegsCount);
+    if (!Gaits.Num()) {
+        return;
+    }
     FGaitConfig Gait = Gaits[CurrentGaitIndex];
     for (int32 FootIndex = 0; FootIndex < LegsCount; ++FootIndex) {
 		AllFeet.Emplace(
@@ -48,7 +54,11 @@ void FLocomotionManager::Reset(
             traceConfig
         );
         AllFeet[FootIndex].Reset();
-        LegOffsets.Add(Gait.LegOffsets[FootIndex]);
+        float legOffset = 0;
+        if (Gait.LegOffsets.IsValidIndex(FootIndex)) {
+            legOffset = Gait.LegOffsets[FootIndex];
+        }
+        LegOffsets.Add(legOffset);
 	}
 }
 
@@ -93,6 +103,9 @@ void FLocomotionManager::ProgressLeg(
     Leg->ExpectedAirTime = CycleDuration;
     Leg->StopTime = ExpectedStopTime;
     Leg->isFalling = isFalling;
+    if (!LegOffsets.IsValidIndex(FootIndex) || !GaitLegOffsets.IsValidIndex(FootIndex)) {
+        return;
+    }
     // upd leg offsets
     float LegOffset = LegOffsets[FootIndex];
     float TargetLegOffset = GaitLegOffsets[FootIndex];
@@ -178,12 +191,16 @@ void FLocomotionManager::DrawDebug(
     );
   
     for (int32 FootIndex = 0; FootIndex < AllFeet.Num(); ++FootIndex) {
+        float legOffset = 0;
+        if (LegOffsets.IsValidIndex(FootIndex)) {
+            legOffset = LegOffsets[FootIndex];
+        }
         DrawInterface->DrawPoint(
             WorldToGlobal,
             GetProgressPoint(
                 Center, 
                 radius, 
-                LegOffsets[FootIndex]
+                legOffset
             ),
             10.f,
             FColor(1.f, 1.f, 1.f)
