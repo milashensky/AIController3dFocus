@@ -101,12 +101,12 @@ void FLocomotionProceduralLeg::UpdateAirTime(float DeltaTime) {
 }
 
 bool FLocomotionProceduralLeg::CastSphere(const FVector& Start, const FVector& End, float SphereRadius, FHitResult& OutHitResult) {
-    if (TraceConfig.World == nullptr || !IsValid(TraceConfig.World) || !TraceConfig.World->IsGameWorld()) {
+    if (TraceConfig.World == nullptr) {
         return false;
     }
     if (
-        !Start.ContainsNaN()
-        || !End.ContainsNaN()
+        Start.ContainsNaN()
+        || End.ContainsNaN()
         || !FMath::IsFinite(SphereRadius)
         || SphereRadius < 0.f
     ) {
@@ -117,7 +117,7 @@ bool FLocomotionProceduralLeg::CastSphere(const FVector& Start, const FVector& E
 
     FCollisionQueryParams QueryParams;
     QueryParams.bTraceComplex = false;
-    if (TraceConfig.Owner) {
+    if (IsValid(TraceConfig.Owner)) {
         QueryParams.AddIgnoredActor(TraceConfig.Owner);
     }
     else if (const UPrimitiveComponent* PrimitiveComponent = Cast<UPrimitiveComponent>(TraceConfig.OnwerComponent)) {
@@ -125,6 +125,14 @@ bool FLocomotionProceduralLeg::CastSphere(const FVector& Start, const FVector& E
     }
     FCollisionResponseParams ResponseParams(ECR_Ignore);
     ResponseParams.CollisionResponse.SetResponse(ECC_WorldStatic, ECR_Block);
+    UE_LOG(LogTemp, Warning,
+        TEXT("World=%s Start=%s End=%s Radius=%f GameThread=%d"),
+        *GetNameSafe(TraceConfig.World),
+        *Start.ToString(),
+        *End.ToString(),
+        SphereRadius,
+        IsInGameThread()
+    );
     bool isHit = TraceConfig.World->SweepSingleByChannel(
         OutHitResult,
         Start,
@@ -143,6 +151,10 @@ FTransform FLocomotionProceduralLeg::ProjectForTarget(FVector StopDistanceVector
     double StopDistanceSqrd = StopDistanceVector.SquaredLength();
     if ((StopDistanceSqrd > 0.01) && StopDistanceSqrd < MinStepLengthSquared) {
         StopDistanceVector = StopDistanceVector.GetSafeNormal() * MinStepLength;
+    }
+    // if just initialized or culled
+    if (CurrentInitialLocation.ContainsNaN()) {
+        return LockTransform;
     }
     FVector ExpectedTarget = CurrentInitialLocation + StopDistanceVector;
     FTransform target = FTransform(
