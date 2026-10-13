@@ -24,7 +24,7 @@ double GetAngleBetween (FVector A, FVector B) {
     return FMath::Acos(
         FMath::Clamp(
             FVector::DotProduct(A.GetSafeNormal(), B.GetSafeNormal()),
-            -1.0f, 
+            -1.0f,
             1.0f
         )
     );
@@ -81,7 +81,7 @@ void FLocomotionProceduralLeg::SetGlobals(float DeltaTime, URigHierarchy* Hierar
         CurrentPositionFlat,
         CurrentInitialPositionFlat
     );
-    
+
     isStable = (CurrentDistanceSquared * (CurrentPoseMultiplier * CurrentPoseMultiplier)) <= DistanceReachThresholdSquared;
     //UE_LOG(LogTemp, Warning, TEXT("Current distance: %f"), CurrentDistanceSquared);
 }
@@ -101,7 +101,15 @@ void FLocomotionProceduralLeg::UpdateAirTime(float DeltaTime) {
 }
 
 bool FLocomotionProceduralLeg::CastSphere(const FVector& Start, const FVector& End, float SphereRadius, FHitResult& OutHitResult) {
-    if (TraceConfig.World == nullptr) {
+    if (TraceConfig.World == nullptr || !IsValid(TraceConfig.World) || !TraceConfig.World->IsGameWorld()) {
+        return false;
+    }
+    if (
+        !Start.ContainsNaN()
+        || !End.ContainsNaN()
+        || !FMath::IsFinite(SphereRadius)
+        || SphereRadius < 0.f
+    ) {
         return false;
     }
     const ECollisionChannel CollisionChannel = UEngineTypes::ConvertToCollisionChannel(TraceConfig.TraceChannel);
@@ -191,7 +199,7 @@ FTransform FLocomotionProceduralLeg::GetStopPosition(const bool isForce) {
         );
         if (!isBetter) {
             return LockTransform;
-        } 
+        }
     }
     return ProjectForTarget(PredictedDistance);
 }
@@ -261,7 +269,7 @@ void FLocomotionProceduralLeg::RetargetLock() {
         || forwardAngleRad > MaxTurnAngeRad
     ) {
         isOverrotating = true;
-        StartMovement(); 
+        StartMovement();
     }
 }
 
