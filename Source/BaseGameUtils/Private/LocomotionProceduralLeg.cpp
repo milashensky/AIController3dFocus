@@ -83,7 +83,6 @@ void FLocomotionProceduralLeg::SetGlobals(float DeltaTime, URigHierarchy* Hierar
     );
 
     isStable = (CurrentDistanceSquared * (CurrentPoseMultiplier * CurrentPoseMultiplier)) <= DistanceReachThresholdSquared;
-    //UE_LOG(LogTemp, Warning, TEXT("Current distance: %f"), CurrentDistanceSquared);
 }
 
 void FLocomotionProceduralLeg::ResetTargets() {
@@ -125,14 +124,6 @@ bool FLocomotionProceduralLeg::CastSphere(const FVector& Start, const FVector& E
     }
     FCollisionResponseParams ResponseParams(ECR_Ignore);
     ResponseParams.CollisionResponse.SetResponse(ECC_WorldStatic, ECR_Block);
-    UE_LOG(LogTemp, Warning,
-        TEXT("World=%s Start=%s End=%s Radius=%f GameThread=%d"),
-        *GetNameSafe(TraceConfig.World),
-        *Start.ToString(),
-        *End.ToString(),
-        SphereRadius,
-        IsInGameThread()
-    );
     bool isHit = TraceConfig.World->SweepSingleByChannel(
         OutHitResult,
         Start,
